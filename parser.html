@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>شبیه‌ساز زبان‌های مستقل از متن</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vis-network@9.1.6/dist/vis-network.min.js"></script>
+    <link href="https://unpkg.com/vis-network@9.1.6/dist/dist/vis-network.min.css" rel="stylesheet" type="text/css" />
+    <style>
+        @font-face {
+            font-family: 'Vazir';
+            src: url('https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font@v30.1.0/dist/Vazir.woff2') format('woff2');
+            font-weight: normal;
+            font-style: normal;
+        }
+        body {
+            font-family: 'Vazir', sans-serif;
+            background-color: #f0f4f8;
+        }
+        .language-box {
+            border: 2px solid #3182ce;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 16px;
+            background-color: #ebf8ff;
+        }
+        .math {
+            font-family: 'Times New Roman', serif;
+        }
+        #pdaGraph {
+            height: 400px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            margin-top: 16px;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-lg p-6">
+        <h1 class="text-3xl font-bold text-center text-blue-700 mb-6">شبیه‌ساز زبان‌های مستقل از متن</h1>
+        
+        <div class="mb-8">
+            <h2 class="text-xl font-bold mb-4 text-blue-600">تعریف زبان‌ها</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="language-box">
+                    <h3 class="font-bold">L1: زبان رشته‌های به فرم a<sup>n</sup>b<sup>m</sup> که m < n ≤ 3m</h3>
+                    <p class="text-gray-700">مثال: aab, aaabb, aaaabb</p>
+                </div>
+                <div class="language-box">
+                    <h3 class="font-bold">L2: زبان رشته‌های به فرم a<sup>n</sup>b<sup>n</sup>c<sup>m</sup> که n ≥ 0 و m ≥ 0</h3>
+                    <p class="text-gray-700">مثال: c, abc, aabbc, aabbccc</p>
+                </div>
+                <div class="language-box">
+                    <h3 class="font-bold">L3: زبان رشته‌های به فرم a<sup>n</sup>b<sup>m</sup>c<sup>m</sup> که n ≥ 0 و m ≥ 0</h3>
+                    <p class="text-gray-700">مثال: a, abc, aabcc, aaaabccc</p>
+                </div>
+                <div class="language-box">
+                    <h3 class="font-bold">L4: زبان رشته‌هایی که تعداد a و b در آنها برابر است</h3>
+                    <p class="text-gray-700">مثال: ab, aabb, abab, aababb</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mb-8">
+            <h2 class="text-xl font-bold mb-4 text-blue-600">ورودی</h2>
+            <div class="mb-4">
+                <label class="block mb-2 font-bold">انتخاب زبان یا عملیات از لیست:</label>
+                <select id="languageSelect" class="w-full p-2 border border-gray-300 rounded">
+                    <option value="L1">L1: زبان رشته‌های به فرم a^n b^m که m < n ≤ 3m</option>
+                    <option value="L2">L2: زبان رشته‌های به فرم a^n b^n c^m که n ≥ 0 و m ≥ 0</option>
+                    <option value="L3">L3: زبان رشته‌های به فرم a^n b^m c^m که n ≥ 0 و m ≥ 0</option>
+                    <option value="L4">L4: زبان رشته‌هایی که تعداد a و b در آنها برابر است</option>
+                    <option value="L1+L2">L1+L2: اجتماع L1 و L2</option>
+                    <option value="L1+L3">L1+L3: اجتماع L1 و L3</option>
+                    <option value="L2+L4">L2+L4: اجتماع L2 و L4</option>
+                    <option value="L3+L4">L3+L4: اجتماع L3 و L4</option>
+                    <option value="L1.L2">L1.L2: ترکیب L1 و L2</option>
+                    <option value="L2.L3">L2.L3: ترکیب L2 و L3</option>
+                    <option value="L3.L4">L3.L4: ترکیب L3 و L4</option>
+                    <option value="(L1+L2).L3">(L1+L2).L3: ترکیب اجتماع L1 و L2 با L3</option>
+                    <option value="(L1+L2).(L3.L4)">(L1+L2).(L3.L4): ترکیب پیچیده</option>
+                    <option value="(L2.L3)+(L1.L4)">(L2.L3)+(L1.L4): ترکیب پیچیده</option>
+                </select>
+            </div>
+            
+            <div class="mb-4">
+                <label class="block mb-2 font-bold">یا وارد کردن عملیات دلخواه:</label>
+                <input type="text" id="customLanguage" class="w-full p-2 border border-gray-300 rounded" placeholder="مثال: (L1+L2).(L3+L4)">
+            </div>
+            
+            <div class="mb-4">
+                <label class="block mb-2 font-bold">ورود رشته‌ها (هر رشته در یک خط):</label>
+                <textarea id="inputStrings" class="w-full p-2 border border-gray-300 rounded h-32" placeholder="رشته‌های خود را اینجا وارد کنید، هر رشته در یک خط. برای رشته خالی (λ) از دکمه زیر استفاده کنید."></textarea>
+                <button id="addLambda" class="bg-gray-500 text-white px-4 py-1 mt-2 rounded hover:bg-gray-600 transition-colors">افزودن رشته خالی (λ)</button>
+            </div>
+            
+            <div class="mb-4">
+                <label class="block mb-2 font-bold">یا آپلود فایل متنی:</label>
+                <input type="file" id="fileInput" class="w-full p-2 border border-gray-300 rounded" accept=".txt">
+            </div>
+            
+            <button id="checkButton" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition-colors w-full">بررسی رشته‌ها</button>
+        </div>
+        
+        <div class="mb-4">
+            <h2 class="text-xl font-bold mb-4 text-blue-600">نتایج</h2>
+            <div id="results" class="border border-gray-300 rounded p-4 min-h-[200px] bg-gray-50">
+                <p class="text-gray-500 text-center">نتایج اینجا نمایش داده خواهند شد.</p>
+            </div>
+        </div>
+
+        <div class="mb-4">
+            <h2 class="text-xl font-bold mb-4 text-blue-600">نمودار اتوماتون پشته‌ای (PDA)</h2>
+            <div id="pdaGraph" class="bg-white rounded-lg shadow-lg"></div>
+            <p id="pdaDescription" class="text-gray-600 text-center mt-4">نمودار PDA برای زبان انتخاب‌شده اینجا نمایش داده خواهد شد.</p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const checkButton = document.getElementById('checkButton');
+            const fileInput = document.getElementById('fileInput');
+            const inputStrings = document.getElementById('inputStrings');
+            const resultsDiv = document.getElementById('results');
+            const languageSelect = document.getElementById('languageSelect');
+            const customLanguage = document.getElementById('customLanguage');
+            const addLambdaButton = document.getElementById('addLambda');
+
+            // افزودن رشته خالی (λ) به textarea
+            addLambdaButton.addEventListener('click', function() {
+                inputStrings.value = inputStrings.value ? inputStrings.value + '\n' : '';
+                inputStrings.value += 'λ';
+            });
+
+            // خواندن فایل متنی
+            fileInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        // جایگزینی lambda با λ برای سازگاری
+                        let content = e.target.result.replace(/lambda/gi, 'λ');
+                        inputStrings.value = content;
+                    };
+                    reader.readAsText(file);
+                }
+            });
+
+            // بررسی رشته‌ها
+            checkButton.addEventListener('click', function() {
+                let strings = inputStrings.value.split('\n').map(s => s.trim() === 'λ' ? '' : s.trim());
+                strings = strings.filter(s => s !== null && s !== undefined);
+
+                if (strings.length === 0) {
+                    resultsDiv.innerHTML = '<p class="text-red-500">لطفاً حداقل یک رشته وارد کنید.</p>';
+                    return;
+                }
+
+                try {
+                    const results = checkStrings(strings, customLanguage.value.trim() || languageSelect.value);
+                    displayResults(results);
+                } catch (error) {
+                    resultsDiv.innerHTML = `<p class="text-red-500">خطا در پردازش: ${error.message}</p>`;
+                }
+            });
+
+            // نمایش نتایج
+            function displayResults(results) {
+                let html = '<div class="space-y-4">';
+                
+                results.forEach(result => {
+                    const statusClass = result.accepted ? 'bg-green-100 border-green-500' : 'bg-red-100 border-red-500';
+                    const statusText = result.accepted ? 'پذیرفته شد' : 'رد شد';
+                    const statusTextClass = result.accepted ? 'text-green-700' : 'text-red-700';
+                    
+                    html += `
+                        <div class="p-3 border-r-4 ${statusClass} rounded">
+                            <div class="flex justify-between items-center">
+                                <span class="font-bold">${result.string}</span>
+                                <span class="font-bold ${statusTextClass}">${statusText}</span>
+                            </div>
+                            <p class="text-gray-600 text-sm mt-1">${result.reason}</p>
+                        </div>
+                    `;
+                });
+                
+                html += '</div>';
+                resultsDiv.innerHTML = html;
+            }
+
+            // بررسی زبان‌ها
+            function checkStrings(strings, languageType) {
+                const results = [];
+                
+                strings.forEach(str => {
+                    const result = {
+                        string: str === '' ? 'λ' : str,
+                        accepted: false,
+                        reason: ''
+                    };
+                    
+                    if (isBasicLanguage(languageType) || isPredefinedOperation(languageType)) {
+                        result.accepted = evaluateLanguage(str, languageType);
+                        result.reason = getReasonMessage(str, languageType, result.accepted);
+                    } else {
+                        try {
+                            result.accepted = evaluateComplexLanguage(str, languageType);
+                            result.reason = `رشته در زبان ${languageType} ${result.accepted ? 'پذیرفته شد' : 'رد شد'}.`;
+                        } catch (error) {
+                            result.accepted = false;
+                            result.reason = `خطا در بررسی: ${error.message}`;
+                        }
+                    }
+                    
+                    results.push(result);
+                });
+
+                // نمایش نمودار PDA
+                displayPDAGraph(languageType);
+                
+                return results;
+            }
+
+            // بررسی زبان L1: a^n b^m که m < n ≤ 3m
+            function checkL1(str) {
+                if (str === '') return false; // λ پذیرفته نمی‌شود
+                
+                let i = 0;
+                while (i < str.length && str[i] === 'a') i++;
+                let countA = i;
+                let countB = 0;
+                while (i < str.length && str[i] === 'b') {
+                    countB++;
+                    i++;
+                }
+                if (i !== str.length) return false;
+                return countB < countA && countA <= 3 * countB;
+            }
+
+            // بررسی زبان L2: a^n b^n c^m که n ≥ 0 و m ≥ 0
+            function checkL2(str) {
+                if (str === '') return true; // λ پذیرفته می‌شود
+                
+                let i = 0;
+                while (i < str.length && str[i] === 'a') i++;
+                let countA = i;
+                let countB = 0;
+                while (i < str.length && str[i] === 'b') {
+                    countB++;
+                    i++;
+                }
+                let countC = 0;
+                while (i < str.length && str[i] === 'c') {
+                    countC++;
+                    i++;
+                }
+                if (i !== str.length) return false;
+                return countA === countB && countA >= 0 && countC >= 0;
+            }
+
+            // بررسی زبان L3: a^n b^m c^m که n ≥ 0 و m ≥ 0
+            function checkL3(str) {
+                if (str === '') return true; // λ پذیرفته می‌شود
+                
+                let i = 0;
+                while (i < str.length && str[i] === 'a') i++;
+                let countA = i;
+                let countB = 0;
+                while (i < str.length && str[i] === 'b') {
+                    countB++;
+                    i++;
+                }
+                let countC = 0;
+                while (i < str.length && str[i] === 'c') {
+                    countC++;
+                    i++;
+                }
+                if (i !== str.length) return false;
+                return countB === countC && countA >= 0 && countB >= 0;
+            }
+
+            // بررسی زبان L4: تعداد a و b برابر
+            function checkL4(str) {
+                if (str === '') return true; // λ پذیرفته می‌شود
+                
+                let countA = 0;
+                let countB = 0;
+                for (let i = 0; i < str.length; i++) {
+                    if (str[i] === 'a') countA++;
+                    else if (str[i] === 'b') countB++;
+                    else return false;
+                }
+                return countA === countB;
+            }
+
+            // بررسی ترکیب دو زبان
+            function checkConcatenation(str, lang1, lang2) {
+                for (let i = 0; i <= str.length; i++) {
+                    const firstPart = str.substring(0, i);
+                    const secondPart = str.substring(i);
+                    const firstAccepted = evaluateLanguage(firstPart, lang1);
+                    const secondAccepted = evaluateLanguage(secondPart, lang2);
+                    if (firstAccepted && secondAccepted) return true;
+                }
+                return false;
+            }
+
+            // بررسی اجتماع دو زبان
+            function checkUnion(str, lang1, lang2) {
+                return evaluateLanguage(str, lang1) || evaluateLanguage(str, lang2);
+            }
+
+            // بررسی آیا زبان پایه است
+            function isBasicLanguage(lang) {
+                return ['L1', 'L2', 'L3', 'L4'].includes(lang);
+            }
+
+            // بررسی آیا عملیات از پیش تعریف شده است
+            function isPredefinedOperation(lang) {
+                const predefined = [
+                    'L1+L2', 'L1+L3', 'L2+L4', 'L3+L4',
+                    'L1.L2', 'L2.L3', 'L3.L4',
+                    '(L1+L2).L3', '(L1+L2).(L3.L4)', '(L2.L3)+(L1.L4)'
+                ];
+                return predefined.includes(lang);
+            }
+
+            // ارزیابی زبان‌های پایه و عملیات‌های از پیش تعریف شده
+            function evaluateLanguage(str, lang) {
+                switch(lang) {
+                    case 'L1': return checkL1(str);
+                    case 'L2': return checkL2(str);
+                    case 'L3': return checkL3(str);
+                    case 'L4': return checkL4(str);
+                    case 'L1+L2': return checkUnion(str, 'L1', 'L2');
+                    case 'L1+L3': return checkUnion(str, 'L1', 'L3');
+                    case 'L2+L4': return checkUnion(str, 'L2', 'L4');
+                    case 'L3+L4': return checkUnion(str, 'L3', 'L4');
+                    case 'L1.L2': return checkConcatenation(str, 'L1', 'L2');
+                    case 'L2.L3': return checkConcatenation(str, 'L2', 'L3');
+                    case 'L3.L4': return checkConcatenation(str, 'L3', 'L4');
+                    case '(L1+L2).L3': return checkConcatenation(str, 'L1+L2', 'L3');
+                    case '(L1+L2).(L3.L4)': return checkConcatenation(str, 'L1+L2', 'L3.L4');
+                    case '(L2.L3)+(L1.L4)': return checkUnion(str, 'L2.L3', 'L1.L4');
+                    default: return evaluateComplexLanguage(str, lang);
+                }
+            }
+
+            // ارزیابی عملیات‌های پیچیده
+            function evaluateComplexLanguage(str, expression) {
+                const tokens = tokenizeExpression(expression);
+                const parseTree = buildParseTree(tokens);
+                return evaluateParseTree(str, parseTree);
+            }
+
+            // تجزیه عبارت به توکن‌ها
+            function tokenizeExpression(expression) {
+                const tokens = [];
+                let i = 0;
+                while (i < expression.length) {
+                    if (expression[i] === 'L' && i + 1 < expression.length && /[1-4]/.test(expression[i + 1])) {
+                        tokens.push(expression.substring(i, i + 2));
+                        i += 2;
+                    } else if (expression[i] === '+' || expression[i] === '.') {
+                        tokens.push(expression[i]);
+                        i++;
+                    } else if (expression[i] === '(' || expression[i] === ')') {
+                        tokens.push(expression[i]);
+                        i++;
+                    } else if (/\s/.test(expression[i])) {
+                        i++;
+                    } else {
+                        throw new Error(`کاراکتر نامعتبر در موقعیت ${i}: ${expression[i]}`);
+                    }
+                }
+                return tokens;
+            }
+
+            // ساخت درخت تجزیه
+            function buildParseTree(tokens) {
+                function parseExpression(index) {
+                    let result, nextIndex;
+                    [result, nextIndex] = parseFactor(index);
+                    while (nextIndex < tokens.length && (tokens[nextIndex] === '+' || tokens[nextIndex] === '.')) {
+                        const operator = tokens[nextIndex];
+                        let right;
+                        [right, nextIndex] = parseFactor(nextIndex + 1);
+                        result = {
+                            type: operator === '+' ? 'union' : 'concatenation',
+                            left: result,
+                            right: right
+                        };
+                    }
+                    return [result, nextIndex];
+                }
+
+                function parseFactor(index) {
+                    if (index >= tokens.length) {
+                        throw new Error('انتهای غیرمنتظره عبارت');
+                    }
+                    if (tokens[index] === '(') {
+                        const [result, nextIndex] = parseExpression(index + 1);
+                        if (nextIndex >= tokens.length || tokens[nextIndex] !== ')') {
+                            throw new Error('پرانتز بسته مورد انتظار');
+                        }
+                        return [result, nextIndex + 1];
+                    } else if (tokens[index].startsWith('L')) {
+                        return [{ type: 'language', value: tokens[index] }, index + 1];
+                    } else {
+                        throw new Error(`توکن نامعتبر: ${tokens[index]}`);
+                    }
+                }
+
+                const [tree, endIndex] = parseExpression(0);
+                if (endIndex !== tokens.length) {
+                    throw new Error(`توکن‌های اضافی در انتهای عبارت: ${tokens.slice(endIndex).join(' ')}`);
+                }
+                return tree;
+            }
+
+            // ارزیابی درخت تجزیه
+            function evaluateParseTree(str, node) {
+                if (node.type === 'language') {
+                    return evaluateLanguage(str, node.value);
+                } else if (node.type === 'union') {
+                    return evaluateParseTree(str, node.left) || evaluateParseTree(str, node.right);
+                } else if (node.type === 'concatenation') {
+                    for (let i = 0; i <= str.length; i++) {
+                        const firstPart = str.substring(0, i);
+                        const secondPart = str.substring(i);
+                        if (evaluateParseTree(firstPart, node.left) && evaluateParseTree(secondPart, node.right)) {
+                            return true;
+                        }
+                    }
+                    return false;
+                } else {
+                    throw new Error(`نوع گره نامعتبر: ${node.type}`);
+                }
+            }
+
+            // تولید پیام دلیل
+            function getReasonMessage(str, lang, accepted) {
+                const strDisplay = str === '' ? 'λ' : str;
+                switch(lang) {
+                    case 'L1':
+                        return accepted ? 
+                            `رشته ${strDisplay} به فرم a^n b^m است که m < n ≤ 3m.` : 
+                            `رشته ${strDisplay} به فرم a^n b^m نیست که m < n ≤ 3m.`;
+                    case 'L2':
+                        return accepted ? 
+                            `رشته ${strDisplay} به فرم a^n b^n c^m است که n ≥ 0 و m ≥ 0.` : 
+                            `رشته ${strDisplay} به فرم a^n b^n c^m نیست که n ≥ 0 و m ≥ 0.`;
+                    case 'L3':
+                        return accepted ? 
+                            `رشته ${strDisplay} به فرم a^n b^m c^m است که n ≥ 0 و m ≥ 0.` : 
+                            `رشته ${strDisplay} به فرم a^n b^m c^m نیست که n ≥ 0 و m ≥ 0.`;
+                    case 'L4':
+                        return accepted ? 
+                            `تعداد a و b در رشته ${strDisplay} برابر است.` : 
+                            `تعداد a و b در رشته ${strDisplay} برابر نیست.`;
+                    default:
+                        return `رشته ${strDisplay} در زبان ${lang} ${accepted ? 'پذیرفته شد' : 'رد شد'}.`;
+                }
+            }
+
+            // تعریف PDA برای هر زبان
+            function getPDADefinition(language) {
+                const pdaDefinitions = {
+                    'L1': {
+                        nodes: [
+                            { id: 1, label: 'q0', shape: 'circle' },
+                            { id: 2, label: 'q1', shape: 'circle' },
+                            { id: 3, label: 'q2', shape: 'circle', color: { background: '#90EE90' } }
+                        ],
+                        edges: [
+                            { from: 1, to: 1, label: 'a, ε → A' },
+                            { from: 1, to: 2, label: 'b, A → ε' },
+                            { from: 2, to: 2, label: 'b, A → ε' },
+                            { from: 2, to: 3, label: 'ε, ε → ε' }
+                        ],
+                        description: 'PDA برای L1: رشته‌های a^n b^m که m < n ≤ 3m. λ پذیرفته نمی‌شود زیرا حداقل یک a لازم است.'
+                    },
+                    'L2': {
+                        nodes: [
+                            { id: 1, label: 'q0', shape: 'circle' },
+                            { id: 2, label: 'q1', shape: 'circle' },
+                            { id: 3, label: 'q2', shape: 'circle', color: { background: '#90EE90' } }
+                        ],
+                        edges: [
+                            { from: 1, to: 1, label: 'a, ε → A' },
+                            { from: 1, to: 2, label: 'b, A → ε' },
+                            { from: 2, to: 2, label: 'b, A → ε' },
+                            { from: 2, to: 3, label: 'c, ε → ε' },
+                            { from: 3, to: 3, label: 'c, ε → ε' },
+                            { from: 1, to: 3, label: 'ε, ε → ε' } // برای پذیرش λ
+                        ],
+                        description: 'PDA برای L2: رشته‌های a^n b^n c^m. aها را با A در پشته می‌شمارد، bها را با برداشتن A بررسی می‌کند، سپس cها را می‌پذیرد. λ پذیرفته می‌شود.'
+                    },
+                    'L3': {
+                        nodes: [
+                            { id: 1, label: 'q0', shape: 'circle' },
+                            { id: 2, label: 'q1', shape: 'circle' },
+                            { id: 3, label: 'q2', shape: 'circle', color: { background: '#90EE90' } }
+                        ],
+                        edges: [
+                            { from: 1, to: 1, label: 'a, ε → ε' },
+                            { from: 1, to: 2, label: 'b, ε → B' },
+                            { from: 2, to: 2, label: 'b, ε → B' },
+                            { from: 2, to: 3, label: 'c, B → ε' },
+                            { from: 3, to: 3, label: 'c, B → ε' },
+                            { from: 1, to: 3, label: 'ε, ε → ε' } // برای پذیرش λ
+                        ],
+                        description: 'PDA برای L3: رشته‌های a^n b^m c^m. aها را نادیده می‌گیرد، bها را با B در پشته می‌شمارد، سپس cها را با برداشتن B بررسی می‌کند. λ پذیرفته می‌شود.'
+                    },
+                    'L4': {
+                        nodes: [
+                            { id: 1, label: 'q0', shape: 'circle' },
+                            { id: 2, label: 'q1', shape: 'circle', color: { background: '#90EE90' } }
+                        ],
+                        edges: [
+                            { from: 1, to: 1, label: 'a, ε → A' },
+                            { from: 1, to: 1, label: 'b, A → ε' },
+                            { from: 1, to: 2, label: 'ε, ε → ε' }
+                        ],
+                        description: 'PDA برای L4: رشته‌هایی که تعداد a و b برابر است. aها را با A در پشته می‌شمارد و bها را با برداشتن A بررسی می‌کند. λ پذیرفته می‌شود.'
+                    }
+                };
+                if (!pdaDefinitions[language]) {
+                    return {
+                        nodes: [{ id: 1, label: 'q0', shape: 'circle' }],
+                        edges: [],
+                        description: `برای عملیات پیچیده ${language}، ساخت PDA به‌صورت خودکار ممکن نیست. لطفاً به تعریف تئوریک مراجعه کنید.`
+                    };
+                }
+                return pdaDefinitions[language];
+            }
+
+            // نمایش نمودار PDA
+            function displayPDAGraph(language) {
+                const container = document.getElementById('pdaGraph');
+                const descriptionElement = document.getElementById('pdaDescription');
+                const pda = getPDADefinition(language);
+                const nodes = new vis.DataSet(pda.nodes);
+                const edges = new vis.DataSet(pda.edges);
+                const data = { nodes, edges };
+                const options = {
+                    layout: { hierarchical: { direction: 'LR', sortMethod: 'directed' } },
+                    edges: { arrows: 'to', font: { align: 'middle' } },
+                    physics: false
+                };
+                new vis.Network(container, data, options);
+                descriptionElement.innerText = pda.description;
+            }
+        });
+
+        </script>
+        <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'94e3dff083f41cbd',t:'MTc0OTY3MzkxNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
+</body>
+</html>
