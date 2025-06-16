@@ -8,16 +8,19 @@
         <script src="https://unpkg.com/vis-network@9.1.6/dist/vis-network.min.js"></script>
         <link href="https://unpkg.com/vis-network@9.1.6/dist/dist/vis-network.min.css" rel="stylesheet" type="text/css" />
         <style>
+    
             @font-face {
                 font-family: 'Vazir';
                 src: url('https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font@v30.1.0/dist/Vazir.woff2') format('woff2');
                 font-weight: normal;
                 font-style: normal;
             }
+    
             body {
                 font-family: 'Vazir', sans-serif;
                 background-color: #f0f4f8;
             }
+    
             .language-box {
                 border: 2px solid #3182ce;
                 border-radius: 8px;
@@ -25,15 +28,18 @@
                 margin-bottom: 16px;
                 background-color: #ebf8ff;
             }
+    
             .math {
                 font-family: 'Times New Roman', serif;
             }
+    
             #pdaGraph {
                 height: 400px;
                 border: 1px solid #ccc;
                 border-radius: 8px;
                 margin-top: 16px;
             }
+    
         </style>
     </head>
     <body class="p-4 md:p-8">
@@ -81,12 +87,15 @@
                         <option value="(L1+L2).L3">(L1+L2).L3: ترکیب اجتماع L1 و L2 با L3</option>
                         <option value="(L1+L2).(L3.L4)">(L1+L2).(L3.L4): ترکیب پیچیده</option>
                         <option value="(L2.L3)+(L1.L4)">(L2.L3)+(L1.L4): ترکیب پیچیده</option>
+                        <option value="L1*">L1*: ستاره کلین L1</option>
+                        <option value="(L2.L3)*">(L2.L3)*: ستاره کلین ترکیب L2 و L3</option>
+                        <option value="(L4+L1)*">(L4+L1)*: ستاره کلین اجتماع L4 و L1</option>
                     </select>
                 </div>
                 
                 <div class="mb-4">
                     <label class="block mb-2 font-bold">یا وارد کردن عملیات دلخواه:</label>
-                    <input type="text" id="customLanguage" class="w-full p-2 border border-gray-300 rounded" placeholder="مثال: (L1+L2).(L3+L4)">
+                    <input type="text" id="customLanguage" class="w-full p-2 border border-gray-300 rounded" placeholder="مثال: (L1+L2).(L3+L4) یا L1*">
                 </div>
                 
                 <div class="mb-4">
@@ -118,21 +127,21 @@
         </div>
     
         <script>
-            document.addEventListener('DOMContentLoaded', function() {                                                                                  // execute whene HTML file (page) is load
-                const checkButton = document.getElementById('checkButton');                                                                             // init var for page elements (for get and sendd data)
+            document.addEventListener('DOMContentLoaded', function() {                                                                  // when index page loaded program active
+                const checkButton = document.getElementById('checkButton');                                                             // define variabes
                 const fileInput = document.getElementById('fileInput');
                 const inputStrings = document.getElementById('inputStrings');
                 const resultsDiv = document.getElementById('results');
                 const languageSelect = document.getElementById('languageSelect');
                 const customLanguage = document.getElementById('customLanguage');
                 const addLambdaButton = document.getElementById('addLambda');
-            
-                addLambdaButton.addEventListener('click', function() {                                                                                  // add lambda symbol to textarea
+    
+                addLambdaButton.addEventListener('click', function() {                                                                  // replace empty line by lambda symbole
                     inputStrings.value = inputStrings.value ? inputStrings.value + '\n' : '';
                     inputStrings.value += 'λ';
                 });
-            
-                fileInput.addEventListener('change', function(e) {                                                                                      // read data from input text
+    
+                fileInput.addEventListener('change', function(e) {                                                                      // read data from file
                     const file = e.target.files[0];                                                                                                     // get first file
                     if (file) {                                                                                                                         // get file if file exists
                         const reader = new FileReader();
@@ -143,25 +152,26 @@
                         reader.readAsText(file);
                     }
                 });
-            
-                checkButton.addEventListener('click', function() {                                                                                      // whene click on check string button (check string)
+    
+                checkButton.addEventListener('click', function() {                                                                      // button for proccess data and show result
                     let strings = inputStrings.value.split('\n').map(s => s.trim() === 'λ' ? '' : s.trim());
-                    strings = strings.filter(s => s !== null && s !== undefined);                                                                       // remove null or undifind char or string in file and save current string in array
-            
-                    if (strings.length === 0) {                                                                                                         // Error message: whene textarea or file is empty 
+                    strings = strings.filter(s => s !== null && s !== undefined);                                                       // clean data from textarea or file
+                    
+    
+                    if (strings.length === 0) {                                                                                 
                         resultsDiv.innerHTML = '<p class="text-red-500">لطفاً حداقل یک رشته وارد کنید.</p>';
                         return;
                     }
-            
-                try {                                                                                                                                   // check string whit entered language (first check for optional language)
-                        const results = checkStrings(strings, customLanguage.value.trim() || languageSelect.value);
+    
+                    try {                                                                                                               
+                        const results = checkStrings(strings, customLanguage.value.trim() || languageSelect.value);                     // check string and show result in output
                         displayResults(results);
                     } catch (error) {
                         resultsDiv.innerHTML = `<p class="text-red-500">خطا در پردازش: ${error.message}</p>`;
                     }
                 });
-            
-                function displayResults(results) {                                                                                                      // show result
+    
+                function displayResults(results) {                                                                                      // set div tag to show result to client
                     let html = '<div class="space-y-4">';
                     
                     results.forEach(result => {
@@ -183,120 +193,122 @@
                     html += '</div>';
                     resultsDiv.innerHTML = html;
                 }
-            
-                function checkStrings(strings, languageType) {                                                                                          // check languages (function input => array from string and selecte language)
-                    const results = [];                                                                                                                 // convert lanset to an analyzable object
+    
+                function checkStrings(strings, languageType) {                                                                          // check string to proccess strings one by one on languages
+                    const results = [];
                     
-                    strings.forEach(str => {                                                                                                            // each empty string replace by lambda symbol
+                    strings.forEach(str => {
                         const result = {
                             string: str === '' ? 'λ' : str,
                             accepted: false,
                             reason: ''
                         };
                         
-                        if (isBasicLanguage(languageType) || isPredefinedOperation(languageType)) {                                                     // check input language
-                            result.accepted = evaluateLanguage(str, languageType);                                                                      // analysis str for selected language
-                            result.reason = getReasonMessage(str, languageType, result.accepted);                                                       // return check message 
-                        } else {
-                            try {
-                                result.accepted = evaluateComplexLanguage(str, languageType);                                                           // if entered lanset is complex => call recursive function for analysis operator
-                                result.reason = `رشته در زبان ${languageType} ${result.accepted ? 'پذیرفته شد' : 'رد شد'}.`;
-                            } catch (error) {
-                                result.accepted = false;
-                                result.reason = `خطا در بررسی: ${error.message}`;
-                            }
+                        try {
+                            result.accepted = evaluateLanguage(str, languageType);                                                      // check string exists on language
+                            result.reason = getReasonMessage(str, languageType, result.accepted);                                       // set success messasge
+                        } catch (error) {
+                            result.accepted = false;
+                            result.reason = `خطا در بررسی: ${error.message}`;
                         }
                         
                         results.push(result);
                     });
-            
-                    displayPDAGraph(languageType);                                                                                                      // show PDA grahp
+    
+                    displayPDAGraph(languageType);
                     
                     return results;
                 }
-            
-                function checkL1(str) {                                                                                                                 // check string for first language
-                    if (str === '')                                                                                                                     // lambda symbol is reject
+    
+                function checkL1(str) {                                                                                                 // check first language precept
+                    if (str === '')
                         return false;
-                    
-                    let i = 0;                                                                                                                          // find count of "a"
-                    while (i < str.length && str[i] === 'a') 
+    
+                    let i = 0;
+                    while (i < str.length && str[i] === 'a')
                         i++;
-            
+    
                     let countA = i;
-                    let countB = 0;                                                                                                                     // find count of "b"
-                    while (i < str.length && str[i] === 'b') {
-                        countB++;
-                        i++;
+                    let countB = 0;
+    
+                    while (i < str.length && str[i] === 'b') { 
+                        countB++; 
+                        i++; 
                     }
-            
-                    if (i !== str.length)  
-                        return false;
-            
-                    return countB < countA && countA <= 3 * countB;                                                                                     // check language condition
-                }
-            
-                function checkL2(str) {                                                                                                                 // check string for second language 
-                    if (str === '')                                                                                                                     // lambda symbol is accept
-                        return true;
-                    
-                    let i = 0;                                                                                                                          // find count of "a"
-                    while (i < str.length && str[i] === 'a') 
-                        i++;
-            
-                    let countA = i;
-                    let countB = 0;                                                                                                                     // find count of "b"
-                    while (i < str.length && str[i] === 'b') {
-                        countB++;
-                        i++;
-                    }
-            
-                    let countC = 0;                                                                                                                     // find count of "c"
-                    while (i < str.length && str[i] === 'c') {
-                        countC++;
-                        i++;
-                    }
-            
+    
                     if (i !== str.length) 
                         return false;
-            
-                    return countA === countB && countA >= 0 && countC >= 0;                                                                             // check language condition
+    
+                    return countB < countA && countA <= 3 * countB;
                 }
-            
-                function checkL3(str) {                                                                                                                 // check string for thied language
-                    if (str === '')                                                                                                                     // lambda symbol is accept
-                        return true;    
-                    
-                    let i = 0;                                                                                                                          // find count of "a"
+    
+                function checkL2(str) {                                                                                                 // check second language precept
+                    if (str === '') 
+                        return true;
+                    let i = 0;
+    
                     while (i < str.length && str[i] === 'a') 
                         i++;
-            
+    
                     let countA = i;
-                    let countB = 0;                                                                                                                     // find count of "b"
-                    while (i < str.length && str[i] === 'b') {
-                        countB++;
-                        i++;
+                    let countB = 0;
+    
+                    while (i < str.length && str[i] === 'b') { 
+                        countB++; 
+                        i++; 
                     }
-            
-                    let countC = 0;                                                                                                                     // find count of "c"
-                    while (i < str.length && str[i] === 'c') {
-                        countC++;
-                        i++;
+    
+                    let countC = 0;
+    
+                    while (i < str.length && str[i] === 'c') { 
+                        countC++; 
+                        i++; 
                     }
-            
+    
                     if (i !== str.length) 
                         return false;
-            
-                    return countB === countC && countA >= 0 && countB >= 0;                                                                             // check language condition
+    
+                    return countA === countB && countA >= 0 && countC >= 0;
                 }
-            
-                function checkL4(str) {                                                                                                                 // check string for fourth language
-                    if (str === '')                                                                                                                     // lambda symbol is accept
+    
+                function checkL3(str) {                                                                                                 // check third language precept
+                    if (str === '') 
                         return true;
-                    
+    
+                    let i = 0;
+    
+                    while (i < str.length && str[i] === 'a') 
+                        i++;
+    
+                    let countA = i;
+                    let countB = 0;
+    
+                    while (i < str.length && str[i] === 'b') { 
+                        countB++; 
+                        i++; 
+                    }
+    
+                    let countC = 0;
+    
+                    while (i < str.length && str[i] === 'c') { 
+                        countC++; 
+                        i++; 
+                    }
+    
+                    if (i !== str.length) 
+                        return false;
+    
+                    return countB === countC && countA > 0 && countB >= 0;
+                }
+    
+                function checkL4(str) {                                                                                                 // check fourth language precept
+                    if (str === '') 
+                        return true;
+    
                     let countA = 0;
                     let countB = 0;
-                    for (let i = 0; i < str.length; i++) {                                                                                              // find count of "a" and "b"
+    
+                    for (let i = 0; i < str.length; i++) {
                         if (str[i] === 'a') 
                             countA++;
                         else if (str[i] === 'b') 
@@ -304,179 +316,189 @@
                         else 
                             return false;
                     }
-            
-                    return countA === countB;                                                                                                           // check language condition
+    
+                    return countA === countB;
                 }
-            
-                function checkConcatenation(str, lang1, lang2) {                                                                                        // check concate between tow language
-                    for (let i = 0; i <= str.length; i++) {
-                        const firstPart = str.substring(0, i);
-                        const secondPart = str.substring(i);
-                        const firstAccepted = evaluateLanguage(firstPart, lang1);
-                        const secondAccepted = evaluateLanguage(secondPart, lang2);
-                        if (firstAccepted && secondAccepted) 
-                            return true;
+    
+                function evaluateLanguage(str, expression) {
+                    if (isBasicLanguage(expression)) {                                                                                  // check language type
+                        switch(expression) {
+                            case 'L1': return checkL1(str);
+                            case 'L2': return checkL2(str);
+                            case 'L3': return checkL3(str);
+                            case 'L4': return checkL4(str);
+                        }
+                    } else {                                                                                                            // if language (L1.L3 or L2* or ...)
+                        const tokens = tokenizeExpression(expression);
+                        const parseTree = buildParseTree(tokens);
+                        return evaluateParseTree(str, parseTree);
                     }
-                    return false;
                 }
-            
-                function checkUnion(str, lang1, lang2) {                                                                                                // check union between tow language
-                    return evaluateLanguage(str, lang1) || evaluateLanguage(str, lang2);
-                }
-            
-                function isBasicLanguage(lang) {                                                                                                        // check entered language is basic language (L1 or L2 or L3 or L4)
+    
+                function isBasicLanguage(lang) {
                     return ['L1', 'L2', 'L3', 'L4'].includes(lang);
                 }
-            
-                function isPredefinedOperation(lang) {                                                                                                  // check default operator for (concat or union)
-                    const predefined = [
-                        'L1+L2', 'L1+L3', 'L2+L4', 'L3+L4',
-                        'L1.L2', 'L2.L3', 'L3.L4',
-                        '(L1+L2).L3', '(L1+L2).(L3.L4)', '(L2.L3)+(L1.L4)'
-                    ];
-                    return predefined.includes(lang);
-                }
-            
-                function evaluateLanguage(str, lang) {                                                                                                  // check default operator 
-                    switch(lang) {
-                        case 'L1': return checkL1(str);
-                        case 'L2': return checkL2(str);
-                        case 'L3': return checkL3(str);
-                        case 'L4': return checkL4(str);
-                        case 'L1+L2': return checkUnion(str, 'L1', 'L2');
-                        case 'L1+L3': return checkUnion(str, 'L1', 'L3');
-                        case 'L2+L4': return checkUnion(str, 'L2', 'L4');
-                        case 'L3+L4': return checkUnion(str, 'L3', 'L4');
-                        case 'L1.L2': return checkConcatenation(str, 'L1', 'L2');
-                        case 'L2.L3': return checkConcatenation(str, 'L2', 'L3');
-                        case 'L3.L4': return checkConcatenation(str, 'L3', 'L4');
-                        case '(L1+L2).L3': return checkConcatenation(str, 'L1+L2', 'L3');
-                        case '(L1+L2).(L3.L4)': return checkConcatenation(str, 'L1+L2', 'L3.L4');
-                        case '(L2.L3)+(L1.L4)': return checkUnion(str, 'L2.L3', 'L1.L4');
-                        default: return evaluateComplexLanguage(str, lang);
-                    }
-                }
-            
-                function evaluateComplexLanguage(str, expression) {                                                                                     // check complex operator
-                    const tokens = tokenizeExpression(expression);
-                    const parseTree = buildParseTree(tokens);
-                    return evaluateParseTree(str, parseTree);
-                }
-            
-                function tokenizeExpression(expression) {                                                                                               // parsing operator ("." or " + " or " * " or " ( " or " ) ")
+    
+                function tokenizeExpression(expression) {
                     const tokens = [];
                     let i = 0;
                     while (i < expression.length) {
-                        if (expression[i] === 'L' && i + 1 < expression.length && /[1-4]/.test(expression[i + 1])) {
-                            tokens.push(expression.substring(i, i + 2));
+                        if (expression[i] === 'L' && i + 1 < expression.length && /[1-4]/.test(expression[i + 1])) {                    // find L1 or L2 or ...
+                            tokens.push(expression.substring(i, i + 2));                                                                // add to array
                             i += 2;
-                        } else if (expression[i] === '+' || expression[i] === '.') {
-                            tokens.push(expression[i]);
+                        } else if (expression[i] === '+' || expression[i] === '.' || expression[i] === '*') {                           // find operators like + or . or *
+                            tokens.push(expression[i]);                                                                                 // add to array
                             i++;
-                        } else if (expression[i] === '(' || expression[i] === ')') {
-                            tokens.push(expression[i]);
+                        } else if (expression[i] === '(' || expression[i] === ')') {                                                    // find "(" or ")"
+                            tokens.push(expression[i]);                                                                                 // add to array
                             i++;
-                        } else if (/\s/.test(expression[i])) {
-                            i++;
+                        } else if (/\s/.test(expression[i])) {                                                                          // find white space
+                            i++;                                                                                                        // transition from this index
                         } else {
-                            throw new Error(`کاراکتر نامعتبر در موقعیت ${i}: ${expression[i]}`);
+                            throw new Error(`کاراکتر نامعتبر در موقعیت ${i}: ${expression[i]}`);                                      // not difine char
                         }
                     }
-                    return tokens;                                                                                                                      // input (like: L1.L2+L3) => output (array("L1", ".", "L2", "+", "L3"))
+                    return tokens;
                 }
-            
-                function buildParseTree(tokens) {                                                                                                       // enter token (like: array("L1", ".", "L2", "+", "L3"))                                                                                        
-                    function parseExpression(index) {                                                                                                   // get simple language (like: L1)
-                        let result, nextIndex;
-                        [result, nextIndex] = parseFactor(index);                                                                                       // save string paresed whit parsfactor function
-                        while (nextIndex < tokens.length && (tokens[nextIndex] === '+' || tokens[nextIndex] === '.')) {                                 // check for the absence of additional token (recursive)
-                            const operator = tokens[nextIndex];
-                            let right;
-                            [right, nextIndex] = parseFactor(nextIndex + 1);
-                            result = {
-                                type: operator === '+' ? 'union' : 'concatenation',
-                                left: result,
-                                right: right
-                            };
-                        }
-                        return [result, nextIndex];
+    
+                function buildParseTree(tokens) {
+                    let currentTokenIndex = 0;
+    
+                    function peek() {                                                                                                   // return first index from token
+                        return tokens[currentTokenIndex];
                     }
-            
-                    function parseFactor(index) {
-                        if (index >= tokens.length) {   
-                            throw new Error('انتهای غیرمنتظره عبارت');
+    
+                    function consume(expected) {                                                                                        // input => operator ("(" or ")" or "+" or "*" or ".")
+                        if (peek() === expected) {
+                            currentTokenIndex++;
+                            return true;
                         }
-            
-                        if (tokens[index] === '(') {                                                                                                    // check lanset strated by "(" or No
-                            const [result, nextIndex] = parseExpression(index + 1);
-                            if (nextIndex >= tokens.length || tokens[nextIndex] !== ')') {                                                              // if lanset tarted by "(" must finished by ")"
+                        return false;
+                    }
+    
+                    function parseAtom() {
+                        if (consume('(')) {                                                                                             // check current "(" => like ( "(L1.L2)*" )
+                            const node = parseExpression();
+                            if (!consume(')')) {
                                 throw new Error('پرانتز بسته مورد انتظار');
                             }
-            
-                            return [result, nextIndex + 1];
-            
-                        } else if (tokens[index].startsWith('L')) {                                                                                     // languages must be started whit "L"
-                            return [{ type: 'language', value: tokens[index] }, index + 1];
-                        } else {
-                            throw new Error(`توکن نامعتبر: ${tokens[index]}`);
+    
+                            return node;
+    
+                        } else if (peek() && peek().startsWith('L')) {                                                                  // check LanSet start whit "L" => like ( "L2.L3" )
+                            const node = { type: 'language', value: tokens[currentTokenIndex] };
+                            currentTokenIndex++;
+                            return node;
+    
+                        } else {                                                                                                        // invalid token
+                            throw new Error(`توکن نامعتبر یا غیرمنتظره: ${peek()}`);
                         }
                     }
-            
-                    const [tree, endIndex] = parseExpression(0);
-                    if (endIndex !== tokens.length) {                                                                                                   // if there is an aditional token => return Error message
-                        throw new Error(`توکن‌های اضافی در انتهای عبارت: ${tokens.slice(endIndex).join(' ')}`);
+    
+                    function parseStar() {                                                                                              // call star function whit last node of operator
+                        let node = parseAtom();
+                        if (consume('*')) {
+                            node = { type: 'star', child: node };
+                        }
+                        return node;
                     }
-            
-                    return tree;                                                                                                                        // return current tree                                                                          
+    
+                    function parseConcatenation() {                                                                                     // call concatenation function whit last node and after node of operator
+                        let node = parseStar();
+                        while (peek() && (peek() === '.' || peek().startsWith('L') || peek() === '(')) {
+                            if (peek() === '.') {
+                                consume('.');
+                            }
+                            const rightNode = parseStar();
+                            node = { type: 'concatenation', left: node, right: rightNode };
+                        }
+                        return node;
+                    }
+    
+                    function parseExpression() {                                                                                        // call union function whit last node and after node of operator
+                        let node = parseConcatenation();
+                        while (consume('+')) {
+                            const rightNode = parseConcatenation();
+                            node = { type: 'union', left: node, right: rightNode };
+                        }
+                        return node;
+                    }
+    
+                    const tree = parseExpression();
+                    if (currentTokenIndex !== tokens.length) {                                                                          // Error for overflow char or operator
+                        throw new Error(`توکن‌های اضافی در انتهای عبارت: ${tokens.slice(currentTokenIndex).join(' ')}`);
+                    }
+    
+                    return tree;                                                                                                        // return tree
                 }
-            
-                function evaluateParseTree(str, node) {                                                                                                 // analys tree
-                    if (node.type === 'language') {                                                                                                     // if node => language (like: L1 or L2 or ...)
-                        return evaluateLanguage(str, node.value);
-            
-                    } else if (node.type === 'union') {                                                                                                 // if node => union (like: L1+L2 or ...)
-                        return evaluateParseTree(str, node.left) || evaluateParseTree(str, node.right);
-            
-                    } else if (node.type === 'concatenation') {                                                                                         // if node => cancat (like: L1.L2 or ...)                                                                   
-                        for (let i = 0; i <= str.length; i++) {
-                            const first = str.substring(0, i);
-                            const second = str.substring(i);
-                            if (evaluateParseTree(first, node.left) && evaluateParseTree(second, node.right)) {
+    
+                function evaluateParseTree(str, node) {
+                    if (node.type === 'language') {                                                                                     // if node type equal to language
+                        return evaluateLanguage(str, node.value);                                                                       // check string whit language
+    
+                    } else if (node.type === 'union') {                                                                                 // if node type equal to union (lanset)
+                        return evaluateParseTree(str, node.left) || evaluateParseTree(str, node.right);                                 // call function (recersive) and check left and right node
+    
+                    } else if (node.type === 'concatenation') {                                                                         // if node type equal to concatenation (lanset)
+                        for (let i = 0; i <= str.length; i++) {                                                                         // check char by char of string and call function (recersive) and check left and right node
+                            const firstPart = str.substring(0, i);
+                            const secondPart = str.substring(i);
+                            if (evaluateParseTree(firstPart, node.left) && evaluateParseTree(secondPart, node.right)) {
                                 return true;
                             }
                         }
+    
                         return false;
-            
+    
+                    } else if (node.type === 'star') {                                                                                  // check string whit star (lanset)
+                        if (str === '') {                                                                                               // accept lambda symbole
+                            return true;
+                        }
+    
+                        const star = new Array(str.length + 1).fill(false);                                                             // create array and fill whit "false"
+                        star[0] = true;                                                                                                 // first index equal to "true"
+    
+                        for (let i = 1; i <= str.length; i++) {
+                            for (let j = 0; j < i; j++) {
+                                if (star[j] && evaluateParseTree(str.substring(j, i), node.child)) {                                    // check char by char of string and call function (recersive) and check this str exists on language
+                                    star[i] = true;
+                                    break;
+                                }
+                            }
+                        }
+                        return star[str.length];
+    
                     } else {
                         throw new Error('نوع گره ناشناخته در درخت تجزیه');
                     }
                 }
-            
-                function getReasonMessage(str, lang, accepted) {                                                                                        // create reason message
+    
+                function getReasonMessage(str, lang, accepted) {                                                                        // send message for each language
                     const strDisplay = str === '' ? 'λ' : str;
-                    switch(lang) {
-                        case 'L1':
-                            return accepted ? 
-                                `رشته ${strDisplay} به فرم a^n b^m است که m < n ≤ 3m.` : 
-                                `رشته ${strDisplay} به فرم a^n b^m نیست که m < n ≤ 3m.`;
-                        case 'L2':
-                            return accepted ? 
-                                `رشته ${strDisplay} به فرم a^n b^n c^m است که n ≥ 0 و m ≥ 0.` : 
-                                `رشته ${strDisplay} به فرم a^n b^n c^m نیست که n ≥ 0 و m ≥ 0.`;
-                        case 'L3':
-                            return accepted ? 
-                                `رشته ${strDisplay} به فرم a^n b^m c^m است که n ≥ 0 و m ≥ 0.` : 
-                                `رشته ${strDisplay} به فرم a^n b^m c^m نیست که n ≥ 0 و m ≥ 0.`;
-                        case 'L4':
-                            return accepted ? 
-                                `تعداد a و b در رشته ${strDisplay} برابر است.` : 
-                                `تعداد a و b در رشته ${strDisplay} برابر نیست.`;
-                        default:
-                            return `رشته ${strDisplay} در زبان ${lang} ${accepted ? 'پذیرفته شد' : 'رد شد'}.`;
+                    if (isBasicLanguage(lang)) {
+                        switch(lang) {
+                            case 'L1':
+                                return accepted ? 
+                                    `رشته ${strDisplay} به فرم a^n b^m است که m < n ≤ 3m.` : 
+                                    `رشته ${strDisplay} به فرم a^n b^m نیست که m < n ≤ 3m.`;
+                            case 'L2':
+                                return accepted ? 
+                                    `رشته ${strDisplay} به فرم a^n b^n c^m است که n ≥ 0 و m ≥ 0.` : 
+                                    `رشته ${strDisplay} به فرم a^n b^n c^m نیست که n ≥ 0 و m ≥ 0.`;
+                            case 'L3':
+                                return accepted ? 
+                                    `رشته ${strDisplay} به فرم a^n b^m c^m است که n ≥ 0 و m ≥ 0.` : 
+                                    `رشته ${strDisplay} به فرم a^n b^m c^m نیست که n ≥ 0 و m ≥ 0.`;
+                            case 'L4':
+                                return accepted ? 
+                                    `تعداد a و b در رشته ${strDisplay} برابر است.` : 
+                                    `تعداد a و b در رشته ${strDisplay} برابر نیست.`;
+                        }
                     }
+                    return `رشته ${strDisplay} در زبان ${lang} ${accepted ? 'پذیرفته شد' : 'رد شد'}.`;
                 }
-            
-                function getPDADefinition(language) {                                                                                                   // define PDA node for each language
+    
+                function getPDADefinition(language) {                                                                                   // create PDA graph whit SVG
                     const pdaDefinitions = {
                         'L1': {
                             nodes: [
@@ -504,7 +526,7 @@
                                 { from: 2, to: 2, label: 'b, A → ε' },
                                 { from: 2, to: 3, label: 'c, ε → ε' },
                                 { from: 3, to: 3, label: 'c, ε → ε' },
-                                { from: 1, to: 3, label: 'ε, ε → ε' } // accept lambda
+                                { from: 1, to: 3, label: 'ε, ε → ε' }   // accept lambda
                             ],
                             description: 'PDA برای L2: رشته‌های a^n b^n c^m. aها را با A در پشته می‌شمارد، bها را با برداشتن A بررسی می‌کند، سپس cها را می‌پذیرد. λ پذیرفته می‌شود.'
                         },
@@ -520,7 +542,7 @@
                                 { from: 2, to: 2, label: 'b, ε → B' },
                                 { from: 2, to: 3, label: 'c, B → ε' },
                                 { from: 3, to: 3, label: 'c, B → ε' },
-                                { from: 1, to: 3, label: 'ε, ε → ε' } // accept lambda
+                                { from: 1, to: 3, label: 'ε, ε → ε' }   // accept lambda
                             ],
                             description: 'PDA برای L3: رشته‌های a^n b^m c^m. aها را نادیده می‌گیرد، bها را با B در پشته می‌شمارد، سپس cها را با برداشتن B بررسی می‌کند. λ پذیرفته می‌شود.'
                         },
@@ -532,22 +554,24 @@
                             edges: [
                                 { from: 1, to: 1, label: 'a, ε → A' },
                                 { from: 1, to: 1, label: 'b, A → ε' },
-                                { from: 1, to: 2, label: 'ε, ε → ε' } // accept lambda
+                                { from: 1, to: 2, label: 'ε, ε → ε' }   // accept lambda
                             ],
                             description: 'PDA برای L4: رشته‌هایی که تعداد a و b برابر است. aها را با A در پشته می‌شمارد و bها را با برداشتن A بررسی می‌کند. λ پذیرفته می‌شود.'
                         }
                     };
-                    if (!pdaDefinitions[language]) {
-                        return {
-                            nodes: [{ id: 1, label: 'q0', shape: 'circle' }],
-                            edges: [],
-                            description: `برای عملیات پیچیده ${language}، ساخت PDA به‌صورت خودکار ممکن نیست. لطفاً به تعریف تئوریک مراجعه کنید.`
-                        };
+    
+                    if (pdaDefinitions[language]) {
+                        return pdaDefinitions[language];
                     }
-                    return pdaDefinitions[language];
+    
+                    return {
+                        nodes: [{ id: 1, label: 'q0', shape: 'circle' }],
+                        edges: [],
+                        description: `برای عملیات پیچیده مانند ${language}، ساخت PDA به‌صورت خودکار ممکن نیست. لطفاً به تعریف تئوریک مراجعه کنید.`
+                    };
                 }
-            
-                function displayPDAGraph(language) {                                                                                                    // create PDA grahp
+    
+                function displayPDAGraph(language) {                                                                                    // show PDA graph to client
                     const container = document.getElementById('pdaGraph');
                     const descriptionElement = document.getElementById('pdaDescription');
                     const pda = getPDADefinition(language);
@@ -564,6 +588,5 @@
                 }
             });
         </script>
-        <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'94e3dff083f41cbd',t:'MTc0OTY3MzkxNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
     </body>
 </html>
