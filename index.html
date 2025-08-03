@@ -236,7 +236,8 @@
                         i++; 
                     }
     
-                    
+                    if (i !== str.length) 
+                        return false;
     
                     return countB < countA && countA <= 3 * countB;
                 }
