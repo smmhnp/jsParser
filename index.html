@@ -58,8 +58,8 @@
                         <p class="text-gray-700">مثال: c, abc, aabbc, aabbccc</p>
                     </div>
                     <div class="language-box">
-                        <h3 class="font-bold">L3: زبان رشته‌های به فرم a<sup>n</sup>b<sup>m</sup>c<sup>m</sup> که n ≥ 0 و m ≥ 0</h3>
-                        <p class="text-gray-700">مثال: a, abc, aabcc, aaaabccc</p>
+                        <h3 class="font-bold">L3: زبان رشته‌های به فرم a<sup>n</sup>b<sup>m</sup>c<sup>m</sup> که n > 0 و m ≥ 0</h3>
+                        <p class="text-gray-700">مثال: a, abc, aabbcc, aaaabbbccc</p>
                     </div>
                     <div class="language-box">
                         <h3 class="font-bold">L4: زبان رشته‌هایی که تعداد a و b در آنها برابر است</h3>
@@ -273,7 +273,7 @@
     
                 function checkL3(str) {                                                                                                 // check third language precept
                     if (str === '') 
-                        return true;
+                        return false;
     
                     let i = 0;
     
